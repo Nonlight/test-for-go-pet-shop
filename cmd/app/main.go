@@ -3,6 +3,7 @@ package main
 import (
 	"go-pet-shop/internal/config"
 	"go-pet-shop/internal/handlers"
+	"go-pet-shop/internal/handlers/product"
 	"go-pet-shop/internal/lib/logger"
 	"go-pet-shop/internal/storage/postgres"
 	"log/slog"
@@ -40,10 +41,10 @@ func main() {
 
 	// Handlers
 	router.Get("/health", handlers.StatusHandler)
-	router.Get("/products", handlers.GetAllProducts(log, storage))
-	router.Post("/products", handlers.CreateProduct(log, storage))
-	router.Delete("/products/{id}", handlers.DeleteProduct(log, storage))
-	router.Put("/products/{id}", handlers.UpdateProduct(log, storage))
+	router.Get("/products", product.GetAllProducts(log, storage))
+	router.Post("/products", product.CreateProduct(log, storage))
+	router.Delete("/products/{id}", product.DeleteProduct(log, storage))
+	router.Put("/products/{id}", product.UpdateProduct(log, storage))
 
 	// Оборачиваем роутер в middleware
 	handler := logger.LoggingMiddleware(log, router)
