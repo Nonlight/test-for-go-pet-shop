@@ -1,4 +1,4 @@
-package handlers
+package product
 
 import (
 	"go-pet-shop/internal/models"
