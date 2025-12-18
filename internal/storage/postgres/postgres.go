@@ -11,10 +11,10 @@ type Storage struct {
 	db *pgxpool.Pool
 }
 
-func New(databaseUrl string) (*Storage, error) {
+func New(ctx context.Context, databaseUrl string) (*Storage, error) {
 	const fn = "storage.postgres.New"
 
-	db, err := pgxpool.New(context.Background(), databaseUrl)
+	db, err := pgxpool.New(ctx, databaseUrl)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fn, err)
 	}

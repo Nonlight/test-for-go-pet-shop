@@ -11,16 +11,20 @@ import (
 
 const (
 	envLocal = "local"
+	envDev   = "dev"
 	envProd  = "prod"
 )
 
 func SetupLogger(env string) *slog.Logger {
 	var log *slog.Logger
 	switch env {
-	case envLocal:
+	case envLocal, envDev:
 		log = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	case envProd:
 		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	default:
+		// На всякий случай создаем дефолтный логгер вместо nil
+		log = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	}
 	return log
 }

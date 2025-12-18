@@ -2,19 +2,25 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"go-pet-shop/internal/models"
 )
 
-// ❗ Ошибка: контекст не должен создаваться через context.Background() внутри методов.
+var (
+	ErrNotFound     = errors.New("not found")
+	ErrInvalidInput = errors.New("invalid input")
+)
+
+// ❗ Памятка - Контекст не должен создаваться через context.Background() внутри методов.
 // Нужно пробросить ctx из main.go (или из вызывающего слоя) до уровня storage.
 // Иначе тайм-ауты и отмены не будут работать — все запросы всегда будут выполняться
 // с “вечным” background-контекстом.
-// Задача ученика: исправить это и передавать единый ctx в каждый запрос.
-func (s *Storage) GetAllProducts() ([]models.Product, error) {
+// GetAllProducts - получает все продукты
+func (s *Storage) GetAllProducts(ctx context.Context) ([]models.Product, error) {
 	const fn = "storage.postgres.product.GetAllProducts"
 
-	rows, err := s.db.Query(context.Background(), `SELECT * FROM products`)
+	rows, err := s.db.Query(ctx, `SELECT id, name, price, stock FROM products ORDER BY id`)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", fn, err)
 	}
@@ -28,58 +34,62 @@ func (s *Storage) GetAllProducts() ([]models.Product, error) {
 		}
 		products = append(products, p)
 	}
+
+	// Проверяем ошибки итерации
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%s: %w", fn, err)
+	}
+
 	return products, nil
 }
 
-// ❗ Ошибка: контекст не должен создаваться через context.Background() внутри методов.
-// Нужно пробросить ctx из main.go (или из вызывающего слоя) до уровня storage.
-// Иначе тайм-ауты и отмены не будут работать — все запросы всегда будут выполняться
-// с “вечным” background-контекстом.
-// Задача ученика: исправить это и передавать единый ctx в каждый запрос.
-func (s *Storage) CreateProduct(p models.Product) error {
+// CreateProduct - создает продукт и возвращает его ID
+func (s *Storage) CreateProduct(ctx context.Context, p models.Product) (int, error) {
 	const fn = "storage.postgres.product.CreateProduct"
 
-	_, err := s.db.Exec(context.Background(),
-		`INSERT INTO products (name, price, stock) VALUES ($1, $2, $3)`,
-		p.Name, p.Price, p.Stock)
+	var id int
+	err := s.db.QueryRow(ctx,
+		`INSERT INTO products (name, price, stock) VALUES ($1, $2, $3) RETURNING id`,
+		p.Name, p.Price, p.Stock).Scan(&id)
+
 	if err != nil {
-		return fmt.Errorf("%s: %w", fn, err)
+		return 0, fmt.Errorf("%s: %w", fn, err)
 	}
 
-	return nil
+	return id, nil
 }
 
-// ❗ Ошибка: контекст не должен создаваться через context.Background() внутри методов.
-// Нужно пробросить ctx из main.go (или из вызывающего слоя) до уровня storage.
-// Иначе тайм-ауты и отмены не будут работать — все запросы всегда будут выполняться
-// с “вечным” background-контекстом.
-// Задача ученика: исправить это и передавать единый ctx в каждый запрос.
-func (s *Storage) DeleteProduct(id string) error {
+// DeleteProduct - удаляет продукт по ID
+func (s *Storage) DeleteProduct(ctx context.Context, id int) error {
 	const fn = "storage.postgres.product.DeleteProduct"
 
-	_, err := s.db.Exec(context.Background(),
+	cmd, err := s.db.Exec(ctx,
 		`DELETE FROM products WHERE id = $1`,
 		id)
 	if err != nil {
 		return fmt.Errorf("%s: %w", fn, err)
 	}
 
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("%s: %w: id=%d", fn, ErrNotFound, id)
+	}
+
 	return nil
 }
 
-// ❗ Ошибка: контекст не должен создаваться через context.Background() внутри методов.
-// Нужно пробросить ctx из main.go (или из вызывающего слоя) до уровня storage.
-// Иначе тайм-ауты и отмены не будут работать — все запросы всегда будут выполняться
-// с “вечным” background-контекстом.
-// Задача ученика: исправить это и передавать единый ctx в каждый запрос.
-func (s *Storage) UpdateProduct(p models.Product) error {
+// UpdateProduct - обновляет продукт
+func (s *Storage) UpdateProduct(ctx context.Context, p models.Product) error {
 	const fn = "storage.postgres.product.UpdateProduct"
 
-	_, err := s.db.Exec(context.Background(),
+	cmd, err := s.db.Exec(ctx,
 		`UPDATE products SET name = $1, price = $2, stock = $3 WHERE id = $4`,
 		p.Name, p.Price, p.Stock, p.ID)
 	if err != nil {
 		return fmt.Errorf("%s: %w", fn, err)
+	}
+
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("%s: %w: id=%d", fn, ErrNotFound, p.ID)
 	}
 
 	return nil
