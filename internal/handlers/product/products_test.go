@@ -96,7 +96,7 @@ func TestCreateProduct_BadRequest(t *testing.T) {
 
 func TestCreateProduct_Fail(t *testing.T) {
 	productMock := mocks.NewProducts(t)
-	productMock.On("CreateProduct", mock.Anything, mock.Anything).Return(0, errors.New("BD error"))
+	productMock.On("CreateProduct", mock.Anything, mock.Anything).Return(0, errors.New("DB error"))
 
 	body := `{"name":"Cat Food","price":12.5,"stock":10}`
 	req := httptest.NewRequest(http.MethodPost, "/products", strings.NewReader(body))
