@@ -2,7 +2,8 @@
 
 ---
 ## Описание:
-Реализованы unit-тесты для HTTP-хендлеров сервиса [Pet Shop](https://github.com/pavloging/go-pet-shop) 
+Реализованы unit-тесты для HTTP-хендлеров сервиса [Pet Shop](https://github.com/pavloging/go-pet-shop)
+
 Тесты представлены в двух версиях: 
 - `v1` - ручной мок;
 - `v2` - go:generate + mockery.
